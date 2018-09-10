@@ -5,7 +5,7 @@ Created on Aug 21, 2018
 '''
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QMessageBox
 from DirNode import DirNode
 # from DirEdge import DirEdge
 from Graph import Graph
@@ -33,6 +33,23 @@ class DiagramScene(QGraphicsScene):
 #         self.timer.setFrameRawnge(0,100)
 #         self.timer.timeout().connect(self.animateDirNodeExpansion)
     
+    def checkInputPath(self, path):
+        if len(path)>1 and path[-1] == '/':
+            path = path[0:len(path)-1]
+            self.main.searchLineEdit.setText(path)
+        if path not in self.graph.nodeDict.keys():
+            QMessageBox.warning(self.main, '', 'The specified object does not exist!')
+            return None
+        return path
+            
+    def confirmSearch(self):
+        path = self.main.searchLineEdit.text()
+        path = self.checkInputPath(path)
+        if not path: return
+        self.layout.select(path)
+        self.layout.setRoot(path)
+        self.update()
+        
     def drawDirNodes(self):
         self.layout = STLayout(self.graph.root, self.graph.nodeDict, self)
         self.layout.config.levelsToShow = 2
@@ -63,7 +80,6 @@ class DiagramScene(QGraphicsScene):
 #         print pos.x(), pos.y()
 #         self.graph.root.setPos(pos.x()/self.canvasW, pos.y()/self.canvasY)
 #         self.scale(.8, .8)
-
         
 #     def animateDirNodeExpansion(self):
 #         animations = []
@@ -87,6 +103,7 @@ class DiagramScene(QGraphicsScene):
             if isinstance(i, DirNode):
                 i.setPos(i.relativeX, i.relativeY)
         self.update()
+
     '''
     Method: translate
       

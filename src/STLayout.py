@@ -713,14 +713,12 @@ class STLayout(object):
         onComplete()
     
     '''Method: set first level'''
-    def setFirstLevel(self, path, direction = 1, method='replot'):
-        '''direction: 1: expand, -1: collapse'''
+    def setFirstLevel(self, path, method='replot'):
         if self.busy: return
         self.busy = True
         callback = {'execHide': True}
         scene = self.scene
         self.graph.clickedNode = clickedNode = self.graph.getNode(path)
-        offset = clickedNode.depth-self.root.depth
         self.graph.root = self.root = clickedNode
         self.graph.computeLevels(path, 0, 'ignore')
         def onShow(node):
@@ -789,4 +787,4 @@ class STLayout(object):
                 self.setRoot(n.path)
             else: 
                 '''for expanding node and collapsing node'''
-                self.setFirstLevel(n.path, translateDirec)
+                self.setFirstLevel(n.path)

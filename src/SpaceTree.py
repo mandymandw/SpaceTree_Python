@@ -4,10 +4,11 @@ Created on Aug 21, 2018
 @author: manw
 '''
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsView
+from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsView, QGraphicsProxyWidget, QLineEdit
 from PyQt5.QtCore import QRect, QRectF
 from PyQt5.QtGui import QPainter
 from DiagramScene import DiagramScene
+from PyQt5.Qt import QPushButton
 
 class MainWindow(QMainWindow):
     def __init__(self, scene=None):
@@ -20,6 +21,21 @@ class MainWindow(QMainWindow):
             self.scene.canvasW, self.scene.canvasH = \
                 self.scene.sceneRect().width()-2*self.scene.margin_horizontal,\
                              self.scene.sceneRect().height()-2*self.scene.margin_vertical
+        
+    def addSearchBox(self):
+        self.searchConfirmWidget = QGraphicsProxyWidget()
+        self.confirmSearchBtn = QPushButton('OK')
+        self.searchConfirmWidget.setWidget(self.confirmSearchBtn)
+        self.scene.addItem(self.searchConfirmWidget)
+        self.searchConfirmWidget.setPos(self.scene.sceneRect().width()-self.searchConfirmWidget.geometry().width()-10, 10)
+        self.confirmSearchBtn.clicked.connect(self.scene.confirmSearch)
+    
+        self.searchLineEdit = QLineEdit()
+        self.searchWidget = QGraphicsProxyWidget()
+        self.searchWidget.setWidget(self.searchLineEdit)
+        self.scene.addItem(self.searchWidget)
+        self.searchWidget.setPos(self.searchConfirmWidget.pos().x()-self.searchLineEdit.geometry().width()-10, \
+                                self.searchConfirmWidget.pos().y()-0.5*(self.searchLineEdit.geometry().height()-self.searchConfirmWidget.geometry().height()))
         
 def main():
     app = QApplication(sys.argv)
@@ -34,6 +50,7 @@ def main():
     scene.setSceneRect(QRectF(view.geometry()))
     mainw.show()
     scene.createGraph()
+    mainw.addSearchBox()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
