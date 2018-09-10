@@ -40,17 +40,19 @@ class Config(object):
     def __init__(self):
         self.align = 'center'
         self.orientation = 'left'
-        self.levelsToShow = 3
-        self.subtreeOffset = 50
+        self.levelsToShow = 2  #the levels to show after the root
+        self.subtreeOffset = 0  #50
         self.siblingOffset = 50
         self.levelDistance = 100
         self.node = None
+        self.offsetX, self.offsetY = 0,0
 
 class Geom(object):
     '''Provide lowlevel geometrical computations'''
     def __init__(self, viz):
         self.viz = viz
         self.scene = viz.scene
+        self.graph = viz.graph
         self.config = viz.config
         self.node = DirNode(self.scene)
         self.edge = DirEdge(self.scene)
@@ -67,11 +69,11 @@ class Geom(object):
       st.geom.translate(new Complex(300, 100), 'endPos');
      (end code)
      '''
-    def translate(self, pos, prop):
-        for elem in self.viz.graph:
-            for p in prop:
-                setattr(elem, p, map(float.__add__, getattr(elem, p), pos))
-                
+    def translate(self, pos, props):
+        for elem in self.viz.graph.nodeDict.values():
+            for p in props:
+                elem[p][0] += pos[0]
+                elem[p][1] += pos[1]
     '''
     Changes the tree current orientation to the one specified.
        You should usually use <ST.switchPosition> instead.
@@ -177,9 +179,7 @@ class Geom(object):
        level - The depth of the subtree to be considered.
     '''
     def treeFitsInCanvas(self, node, canvas, level):
-        #csize = canvas.getSize(node)
-        #size = self.dispatch(csize.width, csize.height)
-        size = self.dispatch(node.width, node.height)
+        size = self.scene.canvasH #self.dispatch(self.config.orientation, self.scene.canvasW, self.scene.canvasH)
         def leaf(level, node):
             return level==0 or (not node.children)
         baseSize = self.getTreeBaseSize(node, level, leaf)
@@ -195,19 +195,27 @@ class Geom(object):
     '''
     Hides levels of the tree until it properly fits in canvas.
     '''
-    def setRightLevelToShow(self, node, canvas):
+    def setRightLevelToShow(self, node, canvas, callback={}):
         level = self.getRightLevelToShow(node, canvas)
-        for alevel in self.graph.graphHier:
-            for n in alevel:
-                d = n.depth-node.depth
-                if d>level:
-                    n.exist = False
-                    n.drawn = False
-                    n.setVisible(False)
-                else:
-                    n.exist = True
+        for n in self.graph.nodeDict.values():
+            '''change n.depth<0 added'''
+            d = n.depth-node.depth
+            if n.depth<0 or d>level:
+                if 'onHide' in callback.keys(): callback['onHide'](n)
+                if 'execHide' in callback.keys():
+                    if callback['execHide']:
+                        n.exist = False
+                        n.drawn = False
+                        n.setVisible(False)
+            else:
+                if 'onShow' in callback.keys(): callback['onShow'](n)
         node.drawn = True
         node.setVisible(True)
+        '''show root siblings True checked'''
+#         for s in self.viz.group.getSiblings([node])[node.path]:
+#             print s.path, s.drawn
+#             s.drawn = True
+#             s.setVisible(True)
         
 class Controller(object):
     
@@ -218,9 +226,9 @@ class STLayout(object):
     
     def __init__(self, root, nodes, scene):
         self.scene = scene
+        self.graph = scene.graph
         self.config = Config()
         self.geom = Geom(self)
-        self.graph = scene.graph
         self.group = Group(self)
         self.fx = Plot(self)
         self.op = Options(self)
@@ -235,14 +243,12 @@ class STLayout(object):
         self.nodesInPath = []
         self.clickedNode = None
         self.busy = False
-        self.initialPos()
-#         self.getNodesToHide(self.root)
-#         self.getNodesToShow(self.root)
+#         self.initialPos()
         
-    def initialPos(self):
-        self.root.relativeX, self.root.relativeY = 0.2, 0.5
-        self.root.setVisible(True)
-#         self.expandChildrenNode(self.root)
+#     def initialPos(self):
+#         self.root.relativeX, self.root.relativeY = 0.2, 0.5
+#         self.root.setVisible(True)
+# #         self.expandChildrenNode(self.root)
     
     def computePosForChildren(self, node, numChildren):
         intervalH = self.scene.canvasH/numChildren
@@ -262,20 +268,28 @@ class STLayout(object):
             i+=1
         node.setPos(node.relativeX, node.relativeY)
          
-    def expandChildrenNode(self, node):
-        node.expanded =  True
-#         numChildren = len(self.children)
-#         self.computePosForChildren(node, self.scene.graphHierCount[node.level+1])
-#         self.scene.animateDirNodeExpansion()
-    
-    def collapseChildrenNode(self, node):
-        node.expanded =  False
+    def expandNode(self, node):
+        self.selectPath(node)
+        if not node.children: return
+        if node.parent: self.group.setExistenceDrawnOfNodes([node.parent], False)
+        self.group.setExistenceDrawnOfNodes(node.children, True)
+        node.expanded = True
+        self.group.expand([node])
+        for n in node.children:
+            self.fitTreeInLevel(n, 1)
+            break
+
+    def collapseNode(self, node, clickedNode=False):
+        self.selectPath(node)
+        if not node.children: return
         for c in node.children:
-            c.setVisible(False)
-            c.collapseChildren()
-        if node.children:
-            self.scene.graphHierCount[node.level+1]-=len(node.children)
-#         self.computePosForChildren(self.scene.graphHierCount[self.level+1])
+            self.collapseNode(c)
+        self.group.contract([node])
+        node.expanded = False
+        if node.parent: self.group.setExistenceDrawnOfNodes([node.parent], True)
+        self.group.setExistenceDrawnOfNodes(node.children, False)
+        if clickedNode:
+            self.fitTreeInLevel(node, -1)
 
     '''from space tree layout'''
     def plot(self):
@@ -283,9 +297,7 @@ class STLayout(object):
         
     def movetree(self, node, prop, val, orn):
         p = 1 if (orn=='left' or orn=='right') else 0
-#         print 'here', node.path
         node[prop][p] += val
-#         print node.path, prop, p, node[prop][p]
    
     def moveextent(self, extent, val):
         ans = []
@@ -293,7 +305,6 @@ class STLayout(object):
             e[0] += val
             e[1] += val
             ans.append(e)
-#         print 'moveextent', ans
         return ans
     
     def merge(self, ps, qs):
@@ -330,8 +341,6 @@ class STLayout(object):
             e = es[i]
             ans = -self.fit(e, acc, subtreeOffset, siblingOffset,0)
             return [ans]+(fitlistrr(self.merge(self.moveextent(e, ans), acc), es, i+1))
-#         print es
-#         print list(reversed(es))
         ans = fitlistrr([], list(reversed(es)), 0)
         return list(reversed(ans))
 
@@ -340,7 +349,6 @@ class STLayout(object):
         es2 = copy.deepcopy(es)
         esl = self.fitlistl(es1, subtreeOffset, siblingOffset)
         esr = self.fitlistr(es2, subtreeOffset, siblingOffset)
-#         print 'es', esl, esr
         ans = [0]*len(esl)
         for i in xrange(len(esl)):
             ans[i] = (esl[i]+esr[i])/2
@@ -366,32 +374,20 @@ class STLayout(object):
             trees, extents, chmaxsize = [], [], False
             chacum = notsval + config.levelDistance
             for n in node.children:
-#                 print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-#                 print 'children', n.path
                 if True or n.exist:
                     if not chmaxsize:
                         chmaxsize= self.getBoundaries(graph, config, n.depth)
                     else:
                         chmaxsize=Size(n.width, n.height)
                     s = designn(n, chmaxsize[nots], acum+chacum, params)
-#                     print 's', s.tree.path, s.extent, [t.path for t in trees]
                     trees.append(s.tree)
                     extents.append(s.extent)
-#             print '**************************'
-#             print node.path
-#             for i in xrange(len(trees)):
-#                 print trees[i].path
-#                 print extents[i]
-#                 print '++++'
-            
             positions = self.fitlist(extents, subtreeOffset, siblingOffset)
-#             print 'pso', positions
             ptrees, pextents = [], []
             for i in xrange(len(trees)):
                 self.movetree(trees[i], prop, positions[i], orn)
                 pextents.append(self.moveextent(extents[i], positions[i]))
             resultextent = [[-sval/2, sval/2]]+self.mergelist(pextents)
-#             print 'resultextent', resultextent
             pp = 0 if p=='x' else 1
             node[prop][pp] = 0
             notpp = 0 if notp=='x' else 1
@@ -399,22 +395,15 @@ class STLayout(object):
                 node[prop][notpp] = acum
             else:
                 node[prop][notpp] = -acum
-#             print 'resultextent', resultextent
-#             print '**************************' 
             return Subtree(node, resultextent)
-#         print 'startNode', node.path
         xx = designn(node, False, 0, params)
         '''test'''
-#         print '----------------------------'
-        queue = [self.graph.root]
-        while len(queue)>0:
-            node = queue.pop(0)
-#             print node.path, node.depth, node.startPos
-            queue.extend(node.children)
-#         print xx.tree.path
-#         print xx.extent
-        
-                
+#         queue = [self.graph.root]
+#         print '-------'
+#         while len(queue)>0:
+#             node = queue.pop(0)
+#             print node.path, node.xy
+#             queue.extend(node.children)
         
     '''Calculates the max width and height nodes for a tree level'''
     def getBoundaries(self, graph, config, level):
@@ -440,11 +429,9 @@ class STLayout(object):
             for n in alevel:
                 if n.drawn and not self.graph.anySubnode(n, 'drawn'):
                     nodeArray.append(n)
-#         for n in nodeArray:
-#             print n.path, n.drawn, self.graph.anySubnode(n, 'drawn')
         return nodeArray
     
-    '''Nodes to hide'''
+    '''Nodes to collapse or no need to show its subtrees'''
     def getNodesToHide(self, node=None):
         if not node:
             node = self.clickedNode
@@ -455,11 +442,13 @@ class STLayout(object):
         for n in graph.nodeDict.values():
             if n.exist and not n.selected:
                 if graph.isDescendantOf(n, node.path):
-                    if n.depth < level: nodeArray.append(n)
-                else: nodeArray.append(n)
+                    if n.depth <= level: 
+                        nodeArray.append(n)
+                elif n.depth>0:
+                    nodeArray.append(n)
         leafLevel = geom.getRightLevelToShow(node, self.scene)
-        leafLevelChildren = graph.eachLevel(node, leafLevel, leafLevel)
-        for level in leafLevelChildren:
+        leafLevelNodes = graph.eachLevel(node, leafLevel, leafLevel)
+        for level in leafLevelNodes:
             for c in level:
                 if c.exist and not c.selected: nodeArray.append(c)
         for i in xrange(len(self.nodesInPath)):
@@ -479,21 +468,20 @@ class STLayout(object):
         node.exist = True
         node.selected = True
         if computeLevels or node.depth==-1:
-            self.graph.computeLevels(self.graph, self.root.path, 0, 'ignore')
+            self.graph.computeLevels(self.root.path, 0, 'ignore')
         self.computePositions(node, propertyy)
         self.computeRelativePos(node, propertyy)
         
     def computeRelativePos(self, node, prop):
-        startX, startY = 0.2*self.scene.width(), 0.5*self.scene.height()
+        startX, startY = self.scene.canvasX, self.scene.canvasY+0.5*self.scene.canvasH
         for n in self.graph.nodeDict.values():
             n.xy[0] = n[prop][0]+startX
             n.xy[1] = n[prop][1]+startY
             n.setAbsolutePos(n.xy[0], n.xy[1])
-            n.setVisible(True)
-#             print n.path, n.xy
             
     def computePositions(self, node, prop):
         self.design(self.graph, node, prop, self.config)
+        nm =  self.graph.getNode('/classes/os/public')
         orn = self.config.orientation
         i = (orn=='left' or orn=='right' )#['x', 'y'][orn=='left' or orn=='right']
         def red(x):
@@ -501,15 +489,8 @@ class STLayout(object):
                 if True or c.exist:
                     c[prop][i] += x[prop][i]
                     red(c)
-#         for alevel in self.graph.graphHier:
-#             print '-------------------'
-#             for n in alevel:
-#                 print n.path, n.startPos
         red(node)
-#         for alevel in self.graph.graphHier:
-#             print '-------------------'
-#             for n in alevel:
-#                 print n.path, n.startPos
+        
     '''
     Method: select
      Selects a node in the <ST> without performing an animation. Useful when selecting
@@ -533,23 +514,23 @@ class STLayout(object):
         geom = self.geom
         node = self.graph.getNode(path)
         scene = self.scene
-        root = self.root
+        if not self.root: self.root = node
         complete = onComplete
         self.selectPath(node)
         self.clickedNode = node
         def onComplete():
-            group.hide(group.prepare(self.getNodesToHide(self)), complete)
+            group.hide(group.prepare(self.getNodesToHide()), complete)
             geom.setRightLevelToShow(node, scene)
-            self.compute('pos')
+            self.compute('xy')
             for n in self.graph.nodeDict.values():
                 n.startPos = n.xy
                 n.endPos = n.xy
                 n.visited = False
             self.geom.translate((node.endPos[0]*(-1),node.endPos[1]*(-1)), ['xy', 'startPos', 'endPos'])
             group.show(self.getNodesToShow())
-            self.plot()
-        ''''''
+#             self.plot()
         self.requestNodes(node, onComplete)
+            
     
     def selectPath(self, node):
         for n in self.graph.nodeDict.values():
@@ -558,22 +539,18 @@ class STLayout(object):
         def path(node):
             if node==None or node.selected: return
             node.selected = True
-#             print node.path
             for n in self.group.getSiblings([node])[node.path]:
-#                 print 'sib', n.path
-                n.exist = True
-                n.drawn = True
+                '''change'''
+                if n.depth >=0:
+                    ''''''
+                    n.exist = True
+                    n.drawn = True
+                    n.setVisible(True)
             path(node.parent)
         ns = [node.path] + (self.nodesInPath)
-#         ns = self.graph.nodeDict.values()
         for n in ns:
             path(self.graph.getNode(n))
-#             print n.path
-#             for x in self.group.getSiblings([n])[n.path]:
-#                 for sib in x:
-#                     print 'sib', sib.path
-        
-    
+            
     '''
     Method: addNodeInPath
         Adds a node to the current path as selected node. The selected node will be visible (as in non-collapsed) at all times.
@@ -604,16 +581,19 @@ class STLayout(object):
         self.graph.computeLevels(self.root, 0, 'ignore')
         self.geom.setRightLevelToShow(self.clickedNode, self.scene)
         for n in self.graph.nodeDict.values():
-            if n.exist: n.draw = True
+            if n.exist: n.drawn = True
         self.compute('endPos')
         if self.clickedNode:
             offset = ((self.scene.translateOffsetX + self.config.offsetX) or 0,\
                       (self.scene.translateOffsetY + self.config.offsetY) or 0)
             self.geom.translate(((self.clickedNode.endPos[0]+offset[0])*(-1), \
-                                (self.clickedNode.endPos[1]+offset[1])*(-1)), 'endPos')
+                                (self.clickedNode.endPos[1]+offset[1])*(-1)), ['endPos'])
             
-    def contract(self, onComplete):
+    def contract(self, onComplete=None):
         nodes = self.getNodesToHide()
+#         for n in nodes:
+#             print n.path
+#         print '----contract-----'
         controller = copy.copy(self.controller)
         controller.onComplete = onComplete
         self.group.contract(nodes, controller)
@@ -621,12 +601,13 @@ class STLayout(object):
     def move(self, node, move, onComplete):
         self.compute('endPos', False)
         offset = (move.offsetX, move.offsetY)
-        self.geom.translate(((node.endPos[0]+offset[0])*(-1), (node.endPos[1]+offset[1])*(-1)), 'endPos')
+        self.geom.translate(((node.endPos[0]+offset[0])*(-1), (node.endPos[1]+offset[1])*(-1)), ['endPos'])
 #         self.fx.animate(self.controller, {modes: ['linear']}, onComplete)
+        onComplete()
 
     def expand(self, node, onComplete):
         nodeArray = self.getNodesToShow(node)
-        controller = copy_func(self.controller)
+        controller = self.controller
         controller.onComplete = onComplete
         self.group.expand(nodeArray, controller)
         
@@ -680,17 +661,19 @@ class STLayout(object):
         fx = self.fx
         config = self.config
         graph = self.graph
-        def Move():
-            offsetX, offsetY = scene.translateOffsetX+config.offsetX or 0,\
-                                scene.translateOffsetY+config.osffsetY or 0
+        ''''''
+        def Move(): return
+        Move.offsetX, Move.offsetY = scene.translateOffsetX+config.offsetX or 0,\
+                                scene.translateOffsetY+config.offsetY or 0
+        ''''''
         if not self.busy:
             self.busy = True
             node = graph.getNode(path)
             self.selectPath(node)
             self.clickedNode = node
-#             self.clickedNode = None
             def onComplete1():
                 def onComplete2():
+#                     print 'onClick----------'
                     geom.setRightLevelToShow(node, scene)
                     def onComplete3():
                         def onComplete4():
@@ -700,24 +683,110 @@ class STLayout(object):
                     self.move(node, Move, onComplete3)
                     '''----------move----------'''
                 self.contract(onComplete2)
-            self.requestNodes(node, onComplete1)
+                '''----------contract----------'''
+            onComplete1()
+#             self.requestNodes(node, onComplete1)
     
     def requestNodes(self, node, onComplete=None):
         handler = self.controller
-        handler.onComplete = onComplete
+#         handler.onComplete = onComplete
         level = self.config.levelsToShow
-        '''tst True'''
-        if True or handler.request:
+        '''no request for json graph'''
+        if False and handler.request:
+            ''''''
             leaves = []
             d = node.depth
             def func(n):
                 if n.drawn and not n.children:
-                    leaves.append(n)
-                    n.level = level-(n.depth-d)
+                    leaves.append(n) #get nodes with no children in the original graph
+                    n.level = level-(n.depth-d) #The level as in the graph to display starting from 0
             levelNodes = self.graph.eachLevel(node, 0, level)
             for alevel in levelNodes:
+#                 print '------alevel-------'
                 for n in alevel:
+#                     print n.path
                     func(n)
+#             print '------leaves-------'
+#             for n in leaves:
+#                 print n.path
             self.group.requestNodes(leaves, handler)
-        else:
-            onComplete()
+        onComplete()
+    
+    '''Method: set first level'''
+    def setFirstLevel(self, path, direction = 1, method='replot'):
+        '''direction: 1: expand, -1: collapse'''
+        if self.busy: return
+        self.busy = True
+        callback = {'execHide': True}
+        scene = self.scene
+        self.graph.clickedNode = clickedNode = self.graph.getNode(path)
+        offset = clickedNode.depth-self.root.depth
+        self.graph.root = self.root = clickedNode
+        self.graph.computeLevels(path, 0, 'ignore')
+        def onShow(node):
+            if not node.drawn and (node.parent and node.parent.expanded): #do not expand the unexpanded nodes
+                node.exist = True
+                node.drawn = True
+                node.setVisible(True)
+                node.endPos[2] = 1
+                node.startPos[2] = 0
+        callback['onShow']=onShow
+        self.geom.setRightLevelToShow(clickedNode, scene, callback)
+        self.compute('xy', False)
+        self.busy = False
+        
+    '''
+    Method: setRoot
+             Switches the current root node. Changes the topology of the Tree.
+            Parameters:
+               id - (string) The id of the node to be set as root.
+               method - (string) Set this to "animate" if you want to animate the tree after adding the subtree. You can also set this parameter to "replot" to just replot the subtree.
+               onComplete - (optional|object) An action to perform after the animation (if any).
+    '''
+    def setRoot(self, path, method='replot', onComplete=None):
+        if self.busy: return
+        self.busy = True
+        scene = self.scene
+        self.graph.clickedNode = clickedNode = self.graph.getNode(path)
+        self.graph.root = self.root = clickedNode
+        self.graph.computeLevels(path, 0, 'ignore')
+#         callback = {'execHide': False}
+        callback = {'execHide': True}
+        def onShow(node):
+            if not node.drawn:
+                node.exist = True
+                node.drawn = True
+                node.setVisible(True)
+                node.endPos[2] = 1
+                node.startPos[2] = 0
+                node.setAbsolutePos(clickedNode.xy[0], clickedNode.xy[1])
+        callback['onShow']=onShow
+        self.geom.setRightLevelToShow(clickedNode, scene, callback)
+#         self.compute('endPos')
+        self.compute('endPos', False)
+        self.busy = True
+        def onComplete1():
+            self.busy = False
+            def onComplete2():
+                onComplete and onComplete.onComplete()
+            self.onClick(path, onComplete2)
+#         self.fx.animate({'modes':['linear', 'node-property:alpha']}, onComplete1)
+        '''for no animation'''
+        onComplete1()
+        if method == 'animate':
+            self.selectPath(clickedNode)
+        elif method == 'replot':
+            self.select(self.root.path)
+    
+    def fitTreeInLevel(self, selectedNode, translateDirec = 0):
+        diff = self.config.levelsToShow
+        n = selectedNode
+        while diff>0 and n.parent:
+            n = n.parent
+            diff -= 1
+        if n!=node: 
+            if translateDirec==0:
+                self.setRoot(n.path)
+            else: 
+                '''for expanding node and collapsing node'''
+                self.setFirstLevel(n.path, translateDirec)

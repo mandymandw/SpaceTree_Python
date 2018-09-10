@@ -28,7 +28,7 @@ class Graph(object):
         return self.nodeDict[path]
     
     def createDirEdge(self, start, end):
-        if start.path == end.path: return
+        if not start or not end: return
         e = DirEdge(self.scene, start, end)
         if start not in self.edgeDict.keys():
             self.edgeDict.update({start:{end: e}})
@@ -71,6 +71,7 @@ class Graph(object):
             p = d[0:d.rfind('/')]
             if p=='': p = '/' 
             node.parent = self.nodeDict[p]
+            if node.parent == node: node.parent = None
             self.createDirEdge(node.parent, node)
             maxdepth = max(maxdepth, node.depth)
             for j in xrange(i+1, len(dirlist)):
@@ -80,26 +81,21 @@ class Graph(object):
                     cnode = self.nodeDict[c]
                     node.children.add(cnode)
                     cnode.depth = node.depth+1
-#                     self.createDirEdge(node, cnode)
-            self.graphHier = [[]]*(len(dirlist[-1].split('/')))
-            for d in self.nodeDict.values():
-                length = len(self.graphHier)
-                if d.depth >= length:
-                    for i in xrange(length, d.depth+1):
-                        self.graphHier.append([])
-                self.graphHier[d.depth].append(d)
-            self.root.parent = None
+        for i in xrange(len(dirlist[-1].split('/'))):
+            self.graphHier.append([])
+        for d in self.nodeDict.values():
+            self.graphHier[d.depth].append(d)
             
-    def computeLevels(self, graph, path, startDepth=0, flags='ignore'):
+    def computeLevels(self, path, startDepth=0, flags='ignore'):
         filterr = self.filte(flags)
-        for elem in graph.nodeDict.values():
+        for elem in self.nodeDict.values():
             if filterr(elem):
                 elem._flag = False
                 elem.depth = -1
-        root = graph.getNode(path)
+        root = self.getNode(path)
         root.depth = startDepth
         queue = [root]
-        def func(adj):
+        def getDepth(adj):
             n = adj.endItem
             if(n._flag==False and filterr(n)):
                 if n.depth<0: n.depth = node.depth+1+startDepth
@@ -107,22 +103,34 @@ class Graph(object):
         while len(queue)!=0:
             node = queue.pop(0)
             node._flag = True
-            self.eachAdjacency(node, func, flags)
+            self.eachAdjacency(node, getDepth, flags)
+        '''change'''
+#         for s in self.scene.layout.group.getSiblings([root])[path]:
+#             s.depth = 0
+        
         
     def isDescendantOf(self, node, path):
         '''Returns a boolean indicating if some node is descendant of the node with the given id.'''
-        if path not in self.nodeDict.keys(): return False
-        children = self.nodeDict[path].children
-        if node in children: return True
-        for c in children:
-            if self.isDescendantOf(node, c.path):
-                return True
+        if node.path==path: return True
+        ans = False
+        return (ans or (node.parent and self.isDescendantOf(node.parent, path)))
         
     '''Returns true if any subnode matches the given condition.'''
-    def anySubnode(self, node, cond, flags=True):
-        for c in node.children:
-            return (getattr(c, cond)==flags)
-        return False
+    def anySubnode(self, node, cond=True, flags=[]):
+        flag = False
+        def func(nn):
+            return nn[cond]
+        if isinstance(cond, str):
+            c = func
+        else:
+            c = cond
+        for n in node.children:
+            if c(n): 
+                flag = True
+        return flag
+#         for c in node.children:
+#             return (getattr(c, cond)==flags)
+#         return False
 
     '''
     Method: eachSubgraph
@@ -135,9 +143,8 @@ class Graph(object):
         return self.eachLevel(node, 0, False)
         
     '''Iterates over a nodes subgraph applying action to the nodes of relative depth between levelBegin and levelEnd.'''
-    def eachLevel(self, node, levelBegin=0, levelEnd=False):
+    def eachLevel(self, node, levelBegin=0, levelEnd=100):
         import copy
-        if not levelEnd: levelEnd = len(self.grahHier)-node.depth-1
         leaflevelChildren = []
         templevel2 = []
         templevel1 = [node]
@@ -146,12 +153,10 @@ class Graph(object):
             while templevel1:
                 curr = templevel1.pop(0)
                 templevel2.extend(curr.children)
-            if i >= levelBegin and i <= levelEnd:
+            if templevel2 and i >= levelBegin and i <= levelEnd:
                 leaflevelChildren.append(templevel2)
             templevel1 = copy.copy(templevel2)
             templevel2 = []
-#         for level in leaflevelChildren:
-#             print '['+','.join(n.path for n in level)+']'
         return leaflevelChildren
     '''
     Method: eachAdjacency

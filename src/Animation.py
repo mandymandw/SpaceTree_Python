@@ -26,11 +26,15 @@ class Animation(QPropertyAnimation):
         self.aniamting = False
         
     def setOptions(self, controller, compute, onComplete=None):
-        pass
+        self.anim = QPropertyAnimation(self.frame, b"geometry")
+#         self.anim.setDuration(10000)
+#         self.anim.setStartValue(QRect(150, 30, 100, 100))
+#         self.anim.setEndValue(QRect(150, 30, 200, 200))
+#         self.anim.start()
         
     def start(self):
-        pass
+        self.start()
 
     def end(self):
-        pass
+        self.stop()
         

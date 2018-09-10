@@ -16,10 +16,9 @@ rad = 6
 def getLabel(node):
     return node.path.split('/')[-1]
 
-# class DirNodeAnima(QGraphicsObject):
-
 class DirNode(QGraphicsEllipseItem):
     DIST_NODE_TEXT = 5
+    node_onclick = pyqtSignal(QGraphicsItem)
     
     def __init__(self, scene=None, path=''):
         QGraphicsEllipseItem.__init__(self, -rad, -rad, 2*rad, 2*rad)
@@ -31,9 +30,9 @@ class DirNode(QGraphicsEllipseItem):
         a dollar sign (i.e $), the node properties will override the global node properties.
         '''
         self.width, self.height = 2*rad, 2*rad
-        self.exist = False
+        self.exist = True
         self.selected = False
-        self.drawn = True
+        self.drawn = False
         
         self.overridable = False
         self.ignore = False
@@ -56,26 +55,37 @@ class DirNode(QGraphicsEllipseItem):
         self.setFlag(QGraphicsItem.ItemIsSelectable)
         self.setPen(QPen(QColor(43,140,190), 3))
         self.setVisible(False)
-    
+        self.setToolTip(self.path)
+#         self.node_onclick.connect(self.scene.setRoot)
+        
     def __getitem__(self,key):
         return getattr(self,key)
        
     def paint(self, painter, option, widget=None):
         '''set fill color'''
+#         self.setVisible(self.drawn)
         self.setBrush(QBrush(Qt.white))
         if self.children and not self.expanded:
-                self.setBrush(QBrush(QColor(166,189,219)))
+            self.setBrush(QBrush(QColor(166,189,219)))
         '''
         draw outline
         '''
+        if self.selected:
+            self.setPen(QPen(Qt.red,3))
+        else:
+            self.setPen(QPen(QColor(43,140,190), 3))
         QGraphicsEllipseItem.paint(self, painter, option, widget)
-        if self.highlighted:
-            pass
+
+            
         '''
         display self.label as label
         '''
         painter.setPen(QPen(Qt.black))
-        self.labelRect = painter.fontMetrics().boundingRect(self.label)
+        if self == self.scene.layout.root:
+            self.displayname = self.path
+        else:
+            self.displayname = self.label
+        self.labelRect = painter.fontMetrics().boundingRect(self.displayname)
         '''top'''
         x = int(self.rect().bottomLeft().x())
         y = int(self.rect().topLeft().y()-self.labelRect.height())
@@ -87,10 +97,10 @@ class DirNode(QGraphicsEllipseItem):
     def paintLabel(self, painter, x, y):
         rect = self.labelRect
         rect.moveTo(x, y)
-        painter.drawText(rect, Qt.AlignLeft, self.label)
+        painter.drawText(rect, Qt.AlignLeft, self.displayname)
         
     def setAbsolutePos(self, x, y):
-        self.xy = (x,y)
+        self.xy[0], self.xy[1] = x,y
         self.relativeX = (self.xy[0]-self.scene.canvasX)/self.scene.canvasW
         self.relativeY = (self.xy[1]-self.scene.canvasY)/self.scene.canvasH
         QGraphicsEllipseItem.setPos(self, QPointF(self.xy[0],self.xy[1]))
@@ -99,7 +109,7 @@ class DirNode(QGraphicsEllipseItem):
         self.relativeX, self.relativeY = rx, ry
 #         self.xy = (rx*self.scene.sceneRect().width(),ry*self.scene.sceneRect().height())
 #         QGraphicsEllipseItem.setPos(self, QPointF(self.xy[0],self.xy[1]))
-        self.xy = (self.scene.canvasX + rx*self.scene.canvasW, self.scene.canvasY + ry*self.scene.canvasH)
+        self.xy[0], self.xy[1] = self.scene.canvasX + rx*self.scene.canvasW, self.scene.canvasY + ry*self.scene.canvasH
         QGraphicsEllipseItem.setPos(self, QPointF(self.xy[0],self.xy[1]))
         
     def itemChange(self, change, value):
@@ -109,19 +119,9 @@ class DirNode(QGraphicsEllipseItem):
     
     def mousePressEvent(self, event):
         if not self.expanded:
-            self.scene.layout.expandChildrenNode(self)
+            self.scene.layout.expandNode(self)
         else:
-            self.scene.layout.collapseChildrenNode(self)
+            self.scene.layout.collapseNode(self,True)
         QGraphicsEllipseItem.mousePressEvent(self, event)
-        self.scene.updateAllItemPos()
-        self.scene.update()
-    
-    def mouseMoveEvent(self, event):
-        QGraphicsEllipseItem.mouseMoveEvent(self, event)
-        self.scene.update()
-        
-    def mouseReleaseEvent(self, event):
-        QGraphicsEllipseItem.mouseReleaseEvent(self, event)
-        self.relativeX = self.pos().x()/self.scene.sceneRect().width()
-        self.relativeY = self.pos().y()/self.scene.sceneRect().height()
+#         self.scene.updateAllItemPos()
         self.scene.update()

@@ -17,11 +17,10 @@ class DiagramScene(QGraphicsScene):
         super(DiagramScene, self).__init__(main)
         self.main = main
         self.margin_vertical = 20
-        self.margin_horizontal = 20
+        self.margin_horizontal = 150
         self.canvasX, self.canvasY = self.margin_horizontal, self.margin_vertical
         self.canvasW, self.canvasH = self.sceneRect().width()-2*self.margin_horizontal,\
                                      self.sceneRect().height()-2*self.margin_vertical
-                                     
         '''For drawing graphs'''
         self.graph = Graph(self) #Access a <Graph> instance.
 #         self.op = viz.op #Access a <ST.Op> instance.
@@ -36,16 +35,19 @@ class DiagramScene(QGraphicsScene):
     
     def drawDirNodes(self):
         self.layout = STLayout(self.graph.root, self.graph.nodeDict, self)
-        self.layout.compute()
+        self.layout.config.levelsToShow = 2
         self.layout.onClick(self.graph.root.path)
-        self.updateAllItemPos()
+#         self.layout.select('/classes/security')
+# #         self.layout.select('/tools/t3/school')
+#         '''need to add filepath check, remove last slash'''
+#         self.layout.fitTreeInLevel(self.graph.getNode('/classes/security'))
     
     def createGraph(self):
         self.view = self.main.centralWidget()
         self.view.setTransformationAnchor(QGraphicsView.NoAnchor)
 #         directories = ['/', '/tools', '/home', '/classes/os', '/classes/security', '/classes/security/public', '/classes/os/public']
 #         directories = ['/']
-        directories = ['/', '/tools/t2/mine', '/tools/t1/mine','/home', '/classes/os', '/classes/security', '/classes/security/public', '/classes/os/public']
+        directories = ['/', '/tools/t2/mine', '/tools/t1/mine', '/tools/t3/school/mine' ,'/home', '/classes/os', '/classes/security', '/classes/security/public', '/classes/os/public']
 
         self.graph.createGraph(directories)
 #         n1 = self.createDirNode('1', id)
@@ -128,7 +130,7 @@ class DiagramScene(QGraphicsScene):
 # #             i.setPos(, )
 #         if not disablePlot:
 #             self.update()
-            
+    
     def clearScreen(self):
         for i in self.items():
             i.drawn = False
