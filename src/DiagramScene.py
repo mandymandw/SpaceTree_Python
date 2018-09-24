@@ -10,11 +10,14 @@ from DirNode import DirNode
 # from DirEdge import DirEdge
 from Graph import Graph
 from STLayout import STLayout
-        
+from collections import namedtuple
+UNIXPerm = namedtuple('UNIXPerm', ('perms', 'user', 'group'))
+
 class DiagramScene(QGraphicsScene):
 
     def __init__(self, main):
         super(DiagramScene, self).__init__(main)
+        
         self.main = main
         self.margin_vertical = 20
         self.margin_horizontal = 150
@@ -28,10 +31,6 @@ class DiagramScene(QGraphicsScene):
         '''set pos for canvas'''
         self.translateOffsetX, self.translateOffsetY = 0, 0
         self.scaleOffsetX, self.scaleOffsetY = 1,1
-        
-#         self.timer = QTimer(5000)
-#         self.timer.setFrameRawnge(0,100)
-#         self.timer.timeout().connect(self.animateDirNodeExpansion)
     
     def checkInputPath(self, path):
         if len(path)>1 and path[-1] == '/':
@@ -52,26 +51,34 @@ class DiagramScene(QGraphicsScene):
         
     def drawDirNodes(self):
         self.layout = STLayout(self.graph.root, self.graph.nodeDict, self)
-        self.layout.config.levelsToShow = 2
+        self.layout.config.levelsToShow = 1
         self.layout.onClick(self.graph.root.path)
-#         self.layout.select('/classes/security')
-# #         self.layout.select('/tools/t3/school')
-#         '''need to add filepath check, remove last slash'''
-#         self.layout.fitTreeInLevel(self.graph.getNode('/classes/security'))
+    
+    def processCrawlerResult(self, filename):
+        import os.path
+        if not os.path.exists(filename): return 
+        directories = {}
+        f = open(filename, 'r')
+        for line in f.readlines():
+            path, perm, uowner, gowner= line.split('\t')
+            directories[path] = UNIXPerm(perm, uowner, gowner)
+        return directories
     
     def createGraph(self):
         self.view = self.main.centralWidget()
         self.view.setTransformationAnchor(QGraphicsView.NoAnchor)
 #         directories = ['/', '/tools', '/home', '/classes/os', '/classes/security', '/classes/security/public', '/classes/os/public']
 #         directories = ['/']
-        directories = ['/', '/tools/t2/mine', '/tools/t1/mine', '/tools/t3/school/mine' ,'/home', '/classes/os', '/classes/security', '/classes/security/public', '/classes/os/public']
-
+#         directories = ['/', '/tools/t2/mine', '/tools/t1/mine', '/tools/t3/school/mine' ,'/home', '/classes/os', '/classes/security', '/classes/security/public', '/classes/os/public']
+#         directories = ['/Users/manw/Documents/interview', 
+#              '/Users/manw/Documents/interview/gdbiblio.pdf', 
+#              '/Users/manw/Documents/interview/notes',
+#              '/Users/manw/Documents/interview/cv_temp', 
+#              '/Users/manw/Documents/interview/notes/main.pdf', 
+#              '/Users/manw/Documents/interview/cv_temp/cv.pdf']
+        directories = self.processCrawlerResult('/Users/manw/Documents/Projects/OSCrawler/InterviewCrawl.txt')
+#         directories = self.processCrawlerResult('/Users/manw/Documents/Projects/OSCrawler/DownloadsCrawl.txt')
         self.graph.createGraph(directories)
-#         n1 = self.createDirNode('1', id)
-#         n2 = self.createDirNode('2')
-#         n3 = self.createDirNode('3')
-#         e1 = self.createDirEdge(n1, n2)
-#         e2 = self.createDirEdge(n1, n3)
         self.drawDirNodes()
 #         self.translate(0, 300)
 #         self.view.translate(0,300)
@@ -81,23 +88,6 @@ class DiagramScene(QGraphicsScene):
 #         self.graph.root.setPos(pos.x()/self.canvasW, pos.y()/self.canvasY)
 #         self.scale(.8, .8)
         
-#     def animateDirNodeExpansion(self):
-#         animations = []
-#         for c in self.root.children:
-#             c.setVisible(True)
-#             animation = QPropertyAnimation(c, b"pos")
-#             animation.setDuration(5);  # 5 seconds
-#             animation.setStartValue(self.root.pos())
-#             animation.setEndValue(c.pos())
-#             animation.setEasingCurve(QEasingCurve.Linear)
-#             animations.append(animation)
-#         #Construct a parallel animation containg "animation" and "animation2"
-#         animgroupPara = QParallelAnimationGroup()
-#         for a in animations:
-#             animgroupPara.addAnimation(a)
-#         animgroupPara.start()
-
-    
     def updateAllItemPos(self):
         for i in self.items():
             if isinstance(i, DirNode):
@@ -150,10 +140,6 @@ class DiagramScene(QGraphicsScene):
     
     def clearScreen(self):
         for i in self.items():
+            i.exit = False
             i.drawn = False
             i.setVisibile(False)
-            
-    def mousePressEvent(self, event):
-#         self.updateAllItemPos()
-#         self.timer.start(1000)
-        return QGraphicsScene.mousePressEvent(self, event)

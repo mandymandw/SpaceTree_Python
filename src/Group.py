@@ -45,8 +45,6 @@ class Group(object):
             self.animation.animating = 'contract'
         def complete():
             self.hide(nodes, controller)
-        self.animation.animating = False
-#         self.animation.setOptions(controller, compute, complete)
 #         self.animation.start()
         complete()
 
@@ -73,16 +71,15 @@ class Group(object):
         if controller: controller.onComplete()
     
     '''expand group of nodes'''        
-    def expand(self, nodes, controller=None):
-        self.show(nodes)
-        def compute(delta):
-#             self.plotStep(delta, controller, self.animation.animating)
-            self.animation.animating = 'expand'
+    def expand(self, nodes, controller=None, isClickedNode=False):
+        self.show(nodes, isClickedNode)
         def complete():
-#             self.plotStep(None, controller, False)
             if controller and getattr(controller, 'onComplete'):
                 controller.onComplete()
-        self.animation.animating = False
+#         self.animation.animating = False
+#         print 'in expand func----'
+#         for n in nodes:
+#             print n.path, n.startPos, n.endPos
 #         self.animation.setOptions(controller, compute, complete)
 #         self.animation.start()
         complete()
@@ -115,11 +112,11 @@ class Group(object):
             node = nodes[i]
             viz.fx.plotSubtree(node, controller, delta, animating)
         
-    def show(self, nodes):
+    def show(self, nodes, isClickedNode=False):
         config = self.config
-        self.prepare(nodes)
+        self.nodes = self.prepare(nodes)
         for n in nodes:
-            ns = self.graph.eachLevel(n, 0, config.levelsToShow)
+            ns = self.graph.eachLevel(n, 0,  1 if isClickedNode else config.levelsToShow)
             for nn in ns:
                 for nnn in nn:
                     if nnn.exist:
@@ -142,8 +139,7 @@ class Group(object):
             queue.extend(n.children)
             
     def prepare(self, nodes):
-        #self.nodes = self.getNodesWithChidren(nodes)
-        return self.getNodesWithChidren(nodes) #self.nodes
+        return self.getNodesWithChidren(nodes)
     
     def getSiblings(self, nodes):
         siblings = {}
@@ -162,7 +158,6 @@ class Group(object):
         sorted(nodes, key=lambda a: a.depth)#lambda a,b:(a.depth<=b.depth)-(a.depth>=b.depth))
         for i in xrange(len(nodes)):
             if self.graph.anySubnode(nodes[i], 'exist', []):
-#                 print  'got here', nodes[i]
                 desc = False
                 j = i+1
                 while not desc and j<len(nodes):
@@ -175,3 +170,5 @@ class Group(object):
         for n in nodes:
             n.exist = n.drawn = flag
             n.setVisible(flag)
+            if not flag: 
+                n.selected = False

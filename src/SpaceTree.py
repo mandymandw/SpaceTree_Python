@@ -5,7 +5,7 @@ Created on Aug 21, 2018
 '''
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsView, QGraphicsProxyWidget, QLineEdit
-from PyQt5.QtCore import QRect, QRectF
+from PyQt5.QtCore import QRect, QRectF, QTimer
 from PyQt5.QtGui import QPainter
 from DiagramScene import DiagramScene
 from PyQt5.Qt import QPushButton

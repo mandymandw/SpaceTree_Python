@@ -43,17 +43,36 @@ class Graph(object):
                 return self.edgeDict[start][end]
         return None
     
+#     def createGraph(self, dirs):
+#         import os
+#         dirset = set('/')
+#         for d in dirs:
+#             ds = d.split('/')
+#             path='/'
+#             for dd in ds:
+#                 path += '/'+dd
+#                 path = os.path.abspath(path.replace("//", "/"))
+#                 dirset.add(path)
+#         dirlist = sorted(list(dirset))
+#         self.dirlist = dirlist
+#         for d in dirlist:
+#             self.createDirNode(d)
+#         self.mycomputeLevels(dirlist)
+
     def createGraph(self, dirs):
         import os
-        dirset = set('/')
-        for d in dirs:
-            ds = d.split('/')
-            path='/'
-            for dd in ds:
-                path += '/'+dd
-                path = os.path.abspath(path.replace("//", "/"))
-                dirset.add(path)
-        dirlist = sorted(list(dirset))
+        '''can remove when reading from crawl file'''
+#         dirset = set('/')
+#         for d in dirs.keys():
+#             ds = d.split('/')
+#             path='/'
+#             for dd in ds:
+#                 path += '/'+dd
+#                 path = os.path.abspath(path.replace("//", "/"))
+#                 dirset.add(path)
+        ''''''
+#         dirlist = sorted(list(dirset))
+        dirlist = sorted(dirs.keys())
         self.dirlist = dirlist
         for d in dirlist:
             self.createDirNode(d)
@@ -62,29 +81,51 @@ class Graph(object):
     def mycomputeLevels(self, dirlist):
         self.root = self.nodeDict[dirlist[0]]
         self.root.depth = 0
-        maxdepth = 0
+        startDepth = 0 if self.root.path=='/' else self.root.path.count('/')
         '''get parent and children nodes'''
         for i in xrange(len(dirlist)):
             d = dirlist[i]
             dset = set(d.split('/'))
             node = self.nodeDict[d]
-            p = d[0:d.rfind('/')]
-            if p=='': p = '/' 
-            node.parent = self.nodeDict[p]
-            if node.parent == node: node.parent = None
+#             if p=='': p = '/'  #remove after using crawl file
+            if node != self.root:
+                p = d[0:d.rfind('/')]
+                pn = self.nodeDict[p]
+                node.parent = pn
+                pn.children.add(node)
+                node.depth = d.count('/')-startDepth
             self.createDirEdge(node.parent, node)
-            maxdepth = max(maxdepth, node.depth)
-            for j in xrange(i+1, len(dirlist)):
-                c = dirlist[j]
-                cset = set(c.split('/'))
-                if len(dset)+1==len(cset) and dset.issubset(cset):
-                    cnode = self.nodeDict[c]
-                    node.children.add(cnode)
-                    cnode.depth = node.depth+1
-        for i in xrange(len(dirlist[-1].split('/'))):
-            self.graphHier.append([])
-        for d in self.nodeDict.values():
-            self.graphHier[d.depth].append(d)
+#         '''ZNOUSE_test'''
+#         for p,n in self.nodeDict.iteritems():
+#             print p, 'None' if not n.parent else n.parent.path, ','.join(x.path for x in n.children)
+            
+            
+#     def mycomputeLevels(self, dirlist):
+#         self.root = self.nodeDict[dirlist[0]]
+#         self.root.depth = 0
+#         maxdepth = 0
+#         '''get parent and children nodes'''
+#         for i in xrange(len(dirlist)):
+#             d = dirlist[i]
+#             dset = set(d.split('/'))
+#             node = self.nodeDict[d]
+#             p = d[0:d.rfind('/')]
+#             if p=='': p = '/' 
+#             node.parent = self.nodeDict[p]
+#             if node.parent == node: node.parent = None
+#             self.createDirEdge(node.parent, node)
+#             maxdepth = max(maxdepth, node.depth)
+#             for j in xrange(i+1, len(dirlist)):
+#                 c = dirlist[j]
+#                 cset = set(c.split('/'))
+#                 if len(dset)+1==len(cset) and dset.issubset(cset):
+#                     cnode = self.nodeDict[c]
+#                     node.children.add(cnode)
+#                     cnode.depth = node.depth+1
+# #         for i in xrange(len(dirlist[-1].split('/'))):
+# #             self.graphHier.append([])
+# #         for d in self.nodeDict.values():
+# #             self.graphHier[d.depth].append(d)
             
     def computeLevels(self, path, startDepth=0, flags='ignore'):
         filterr = self.filte(flags)
@@ -104,9 +145,6 @@ class Graph(object):
             node = queue.pop(0)
             node._flag = True
             self.eachAdjacency(node, getDepth, flags)
-        '''change'''
-#         for s in self.scene.layout.group.getSiblings([root])[path]:
-#             s.depth = 0
         
         
     def isDescendantOf(self, node, path):

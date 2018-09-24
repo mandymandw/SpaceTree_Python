@@ -44,7 +44,6 @@ class DirEdge(QGraphicsLineItem):
         If given a JSON _complex_ graph (defined in <Loader.loadJSON>), an adjacency _data_ property contains properties which are the same as defined here but prefixed with 
         a dollar sign (i.e $), the adjacency properties will override the global edge properties.
         '''
-        self.overridable = False
         self.ignore = False
         self.startItem = startItem
         self.endItem = endItem
