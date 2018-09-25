@@ -43,7 +43,7 @@ class Config(object):
         self.levelsToShow = 2  #the levels to show after the root
         self.subtreeOffset = 0  #50
         self.siblingOffset = 5#50
-        self.levelDistance = 200#100
+        self.levelDistance = 100
         self.node = None
         self.offsetX, self.offsetY = 0,0
 
@@ -263,7 +263,7 @@ class STLayout(object):
         if self.busy: return
         if not node.children: return
         self.busy = True
-        if node.parent: self.group.setExistenceDrawnOfNodes([node.parent], False)
+#         if node.parent: self.group.setExistenceDrawnOfNodes([node.parent], False)
         self.group.setExistenceDrawnOfNodes(node.children, True)
         self.group.expand([node], isClickedNode = isClickedNode)
         for n in node.children:
@@ -271,27 +271,23 @@ class STLayout(object):
             break
         node.expanded = True
         self.getNodesToDraw()
-        print 'expand'
-        self.group.animation.start()
+#         print 'expand'
+        self.group.animation.start(True)
 
     def collapseNode(self, node, clickedNode=False):
         if self.busy: return
-        if not node.children: return
         self.busy = True
-        for c in node.children:
-            self.collapseNode(c)
+        if not node.children: return
         self.group.contract([node])
         node.expanded = False
-        if node.parent: self.group.setExistenceDrawnOfNodes([node.parent], True)
-        self.group.setExistenceDrawnOfNodes(node.children, False)
+#         if node.parent: self.group.setExistenceDrawnOfNodes([node.parent], True)
+#         self.group.setExistenceDrawnOfNodes(node.children, False)
         if clickedNode:
             n = node
-            print 'clicked node', n.path, n.startPos, n.xy, n.endPos
             self.fitTreeInLevel(node, -1)
-            print 'clicked node', n.path, n.startPos, n.xy, n.endPos
-        print 'collapse'
+#         print 'collapse'
         self.getNodesToDraw()
-        self.group.animation.start()
+        self.group.animation.start(False)
 
     '''from space tree layout'''
     def plot(self):
@@ -517,7 +513,6 @@ class STLayout(object):
             group.hide(group.prepare(self.getNodesToHide()), complete)
             geom.setRightLevelToShow(node, scene)
             self.compute('xy') #change
-#             self.compute('endPos')
             for n in self.graph.nodeDict.values():
                 n.startPos = n.xy
                 n.endPos = n.xy
@@ -542,6 +537,7 @@ class STLayout(object):
                     n.drawn = True
                     n.setVisible(True)
             path(node.parent)
+        self.clickedNode = node
         ns = [node.path] + (self.nodesInPath)
         for n in ns:
             path(self.graph.getNode(n))
@@ -597,7 +593,6 @@ class STLayout(object):
         self.compute('endPos', False)
         offset = (move.offsetX, move.offsetY)
         self.geom.translate(((node.endPos[0]+offset[0])*(-1), (node.endPos[1]+offset[1])*(-1)), ['endPos'])
-#         self.fx.animate(self.controller, {modes: ['linear']}, onComplete)
         onComplete()
 
     def expand(self, node, onComplete):
@@ -756,23 +751,20 @@ class STLayout(object):
             def onComplete2():
                 onComplete and onComplete.onComplete()
             self.onClick(path, onComplete2)
-#             self.nodesToShow = self.nodesDraw2-self.nodesDraw1
-#             self.nodesToHide = self.nodesDraw1-self.nodesDraw2
-#             self.nodesToMove = self.nodesDraw2&self.nodesDraw1
-#             self.group.animation.start()
-#         self.fx.animate({'modes':['linear', 'node-property:alpha']}, onComplete1)
         '''for no animation'''
         onComplete1()
         if method == 'animate':
             self.selectPath(clickedNode)
         elif method == 'replot':
             self.select(self.root.path)
-#         self.getNodesToDraw()
+        self.getNodesToDraw()
 #         self.group.animation.start()
     
     def fitTreeInLevel(self, selectedNode, translateDirec = 0):
         diff = self.config.levelsToShow
         n = selectedNode
+        for cn in self.group.getSiblings([n])[n.path]:
+            if cn.expanded: return
         while diff>0 and n.parent:
             n = n.parent
             diff -= 1

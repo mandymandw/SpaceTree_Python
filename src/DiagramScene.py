@@ -49,10 +49,10 @@ class DiagramScene(QGraphicsScene):
         self.layout.setRoot(path)
         self.update()
         
-    def drawDirNodes(self):
-        self.layout = STLayout(self.graph.root, self.graph.nodeDict, self)
-        self.layout.config.levelsToShow = 1
-        self.layout.onClick(self.graph.root.path)
+#     def drawDirNodes(self):
+#         self.layout = STLayout(self.graph.root, self.graph.nodeDict, self)
+#         self.layout.config.levelsToShow = 2
+#         self.layout.onClick(self.graph.root.path)
     
     def processCrawlerResult(self, filename):
         import os.path
@@ -64,22 +64,14 @@ class DiagramScene(QGraphicsScene):
             directories[path] = UNIXPerm(perm, uowner, gowner)
         return directories
     
-    def createGraph(self):
+    def createGraph(self, directories):
         self.view = self.main.centralWidget()
         self.view.setTransformationAnchor(QGraphicsView.NoAnchor)
-#         directories = ['/', '/tools', '/home', '/classes/os', '/classes/security', '/classes/security/public', '/classes/os/public']
-#         directories = ['/']
-#         directories = ['/', '/tools/t2/mine', '/tools/t1/mine', '/tools/t3/school/mine' ,'/home', '/classes/os', '/classes/security', '/classes/security/public', '/classes/os/public']
-#         directories = ['/Users/manw/Documents/interview', 
-#              '/Users/manw/Documents/interview/gdbiblio.pdf', 
-#              '/Users/manw/Documents/interview/notes',
-#              '/Users/manw/Documents/interview/cv_temp', 
-#              '/Users/manw/Documents/interview/notes/main.pdf', 
-#              '/Users/manw/Documents/interview/cv_temp/cv.pdf']
-        directories = self.processCrawlerResult('/Users/manw/Documents/Projects/OSCrawler/InterviewCrawl.txt')
-#         directories = self.processCrawlerResult('/Users/manw/Documents/Projects/OSCrawler/DownloadsCrawl.txt')
         self.graph.createGraph(directories)
-        self.drawDirNodes()
+        self.layout = STLayout(self.graph.root, self.graph.nodeDict, self)
+        self.layout.config.levelsToShow = 3
+        self.layout.onClick(self.graph.root.path)
+#         self.drawDirNodes()
 #         self.translate(0, 300)
 #         self.view.translate(0,300)
 #         print self.graph.root.pos()
@@ -148,3 +140,4 @@ class DiagramScene(QGraphicsScene):
 #         QGraphicsScene.mousePressEvent(self, event)
 #         if event.buttons() == Qt.LeftButton:
 #             self.layout.setRoot('/Users/manw/Documents/interview/cv_temp')
+    

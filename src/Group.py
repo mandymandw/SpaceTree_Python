@@ -39,22 +39,15 @@ class Group(object):
     '''collapse group of nodes'''    
     def contract(self, nodes, controller=None):
         nodes = self.prepare(nodes)
-        def compute(delta):
-            if delta==1: delta=0.99
-#             self.plotStep(1-delta, controller, self.animation.animating)
-            self.animation.animating = 'contract'
         def complete():
             self.hide(nodes, controller)
-#         self.animation.start()
         complete()
-
         
-         
     def hide(self, nodes, controller):
         graph = self.graph
         for i in xrange(len(nodes)):
             self.descendentExpandedUnset(nodes[i])
-            levelNodes = graph.eachLevel(nodes[i], 1, False)
+            levelNodes = graph.eachLevel(nodes[i], 1)
             if True or not controller or not controller.request:
                 for alevel in levelNodes:
                     for elem in alevel:
@@ -62,12 +55,6 @@ class Group(object):
                             elem.drawn = False
                             elem.setVisible(False)
                             elem.exist = False
-#             else:
-#                 ids = []
-#                 for alevel in levelNodes:
-#                     for elem in alevel:
-#                         ids.append(elem.path)
-#                 viz.op.removeNode(ids, {'type':'nothing'}
         if controller: controller.onComplete()
     
     '''expand group of nodes'''        
@@ -170,5 +157,3 @@ class Group(object):
         for n in nodes:
             n.exist = n.drawn = flag
             n.setVisible(flag)
-            if not flag: 
-                n.selected = False

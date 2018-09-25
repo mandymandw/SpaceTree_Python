@@ -57,12 +57,9 @@ class DirNode(QGraphicsObject):
         self.endPos = [0,0,1]
         
         self.setZValue(1)
-        self.setFlag(QGraphicsItem.ItemIsMovable)
         self.setFlag(QGraphicsItem.ItemIsSelectable)
-#         self.setPen(QPen(QColor(43,140,190)))
         self.setVisible(False)
         self.setToolTip(self.path)
-#         self.node_onclick.connect(self.scene.setRoot)
         
     def __getitem__(self,key):
         return getattr(self,key)
@@ -118,10 +115,11 @@ class DirNode(QGraphicsObject):
         QGraphicsObject.setPos(self, QPointF(self.xy[0],self.xy[1]))
     
     def mousePressEvent(self, event):
+        QGraphicsObject.mousePressEvent(self, event)
         self.scene.layout.selectPath(self)
         if not self.expanded:
             self.scene.layout.expandNode(self, True)
         else:
             self.scene.layout.collapseNode(self,True)
-        QGraphicsObject.mousePressEvent(self, event)
+        
         self.scene.update()

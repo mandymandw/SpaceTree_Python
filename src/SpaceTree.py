@@ -49,10 +49,20 @@ def main():
     mainw.setCentralWidget(view)
     scene.setSceneRect(QRectF(view.geometry()))
     mainw.show()
-    scene.createGraph()
+    directories = scene.processCrawlerResult('/Users/manw/Documents/Projects/OSCrawler/InterviewCrawl.txt')
+#         directories = self.processCrawlerResult('/Users/manw/Documents/Projects/OSCrawler/DownloadsCrawl.txt')
+    scene.createGraph(directories)
     mainw.addSearchBox()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
+#         directories = ['/', '/tools', '/home', '/classes/os', '/classes/security', '/classes/security/public', '/classes/os/public']
+#     directories = ['/', '/tools/t2/mine', '/tools/t1/mine', '/tools/t3/school/mine' ,'/home', '/classes/os', '/classes/security', '/classes/security/public', '/classes/os/public']
+#         directories = ['/Users/manw/Documents/interview', 
+#              '/Users/manw/Documents/interview/gdbiblio.pdf', 
+#              '/Users/manw/Documents/interview/notes',
+#              '/Users/manw/Documents/interview/cv_temp', 
+#              '/Users/manw/Documents/interview/notes/main.pdf', 
+#              '/Users/manw/Documents/interview/cv_temp/cv.pdf']
     main()
     
