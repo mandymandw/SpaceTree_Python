@@ -119,7 +119,6 @@ class DirNode(QGraphicsObject):
     
     def mousePressEvent(self, event):
         self.scene.layout.selectPath(self)
-        print self.expanded
         if not self.expanded:
             self.scene.layout.expandNode(self, True)
         else:

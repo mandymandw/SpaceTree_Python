@@ -143,3 +143,8 @@ class DiagramScene(QGraphicsScene):
             i.exit = False
             i.drawn = False
             i.setVisibile(False)
+
+#     def mousePressEvent(self, event):
+#         QGraphicsScene.mousePressEvent(self, event)
+#         if event.buttons() == Qt.LeftButton:
+#             self.layout.setRoot('/Users/manw/Documents/interview/cv_temp')

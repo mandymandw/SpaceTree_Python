@@ -146,7 +146,6 @@ class Graph(object):
             node._flag = True
             self.eachAdjacency(node, getDepth, flags)
         
-        
     def isDescendantOf(self, node, path):
         '''Returns a boolean indicating if some node is descendant of the node with the given id.'''
         if node.path==path: return True

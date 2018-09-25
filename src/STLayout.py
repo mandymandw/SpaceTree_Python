@@ -285,7 +285,10 @@ class STLayout(object):
         if node.parent: self.group.setExistenceDrawnOfNodes([node.parent], True)
         self.group.setExistenceDrawnOfNodes(node.children, False)
         if clickedNode:
+            n = node
+            print 'clicked node', n.path, n.startPos, n.xy, n.endPos
             self.fitTreeInLevel(node, -1)
+            print 'clicked node', n.path, n.startPos, n.xy, n.endPos
         print 'collapse'
         self.getNodesToDraw()
         self.group.animation.start()
@@ -465,6 +468,7 @@ class STLayout(object):
         startX, startY = self.scene.canvasX, self.scene.canvasY+0.5*self.scene.canvasH
         print prop+ '============'
         for n in self.graph.nodeDict.values():
+#             if n.exist:#change_add
             if prop!='startPos':
                 n.startPos[0], n.startPos[1] = n.xy[0], n.xy[1]
             n[prop][0] += startX
@@ -477,7 +481,7 @@ class STLayout(object):
         i = (orn=='left' or orn=='right' )#['x', 'y'][orn=='left' or orn=='right']
         def red(x):
             for c in x.children:
-                if True or c.exist:
+                if True or c.exist:  #change
                     c[prop][i] += x[prop][i]
                     red(c)
         red(node)
@@ -512,7 +516,8 @@ class STLayout(object):
         def onComplete():
             group.hide(group.prepare(self.getNodesToHide()), complete)
             geom.setRightLevelToShow(node, scene)
-            self.compute('xy')
+            self.compute('xy') #change
+#             self.compute('endPos')
             for n in self.graph.nodeDict.values():
                 n.startPos = n.xy
                 n.endPos = n.xy
@@ -521,10 +526,6 @@ class STLayout(object):
             group.show(self.getNodesToShow())
 #             self.plot()
         self.requestNodes(node, onComplete)
-        self.getNodesToDraw()
-#         for n in self.graph.nodeDict.values():
-#             if n.drawn:
-#                 n.setAbsolutePos(n.endPos[0], n.endPos[1])
     
     def selectPath(self, node):
         for n in self.graph.nodeDict.values():
@@ -680,9 +681,6 @@ class STLayout(object):
                 '''----------contract----------'''
             onComplete1()
             self.getNodesToDraw()
-#             for n in self.graph.nodeDict.values():
-#                 if n.drawn:
-#                     n.setAbsolutePos(n.endPos[0], n.endPos[1])
     
     def requestNodes(self, node, onComplete=None):
         handler = self.controller
@@ -748,19 +746,20 @@ class STLayout(object):
                 node.exist = True
                 node.drawn = True
                 node.setVisible(True)
-                node.endPos[2] = 1
-                node.startPos[2] = 0
                 node.setAbsolutePos(clickedNode.xy[0], clickedNode.xy[1])
         callback['onShow']=onShow
         self.geom.setRightLevelToShow(clickedNode, scene, callback)
 #         self.compute('endPos')
         self.compute('endPos', False)
-        self.busy = True
         def onComplete1():
             self.busy = False
             def onComplete2():
                 onComplete and onComplete.onComplete()
             self.onClick(path, onComplete2)
+#             self.nodesToShow = self.nodesDraw2-self.nodesDraw1
+#             self.nodesToHide = self.nodesDraw1-self.nodesDraw2
+#             self.nodesToMove = self.nodesDraw2&self.nodesDraw1
+#             self.group.animation.start()
 #         self.fx.animate({'modes':['linear', 'node-property:alpha']}, onComplete1)
         '''for no animation'''
         onComplete1()
@@ -768,7 +767,8 @@ class STLayout(object):
             self.selectPath(clickedNode)
         elif method == 'replot':
             self.select(self.root.path)
-        self.getNodesToDraw()
+#         self.getNodesToDraw()
+#         self.group.animation.start()
     
     def fitTreeInLevel(self, selectedNode, translateDirec = 0):
         diff = self.config.levelsToShow
