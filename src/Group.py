@@ -39,16 +39,14 @@ class Group(object):
     '''collapse group of nodes'''    
     def contract(self, nodes, controller=None):
         nodes = self.prepare(nodes)
-        def complete():
-            self.hide(nodes, controller)
-        complete()
+        self.hide(nodes, controller)
         
     def hide(self, nodes, controller):
         graph = self.graph
         for i in xrange(len(nodes)):
             self.descendentExpandedUnset(nodes[i])
-            levelNodes = graph.eachLevel(nodes[i], 1)
-            if True or not controller or not controller.request:
+            levelNodes = graph.eachLevel(nodes[i], 1) # get the subgraph rooted at nodes[i]
+            if True or not controller or not controller.request: # remove all of them from display
                 for alevel in levelNodes:
                     for elem in alevel:
                         if elem.exist:
@@ -60,16 +58,8 @@ class Group(object):
     '''expand group of nodes'''        
     def expand(self, nodes, controller=None, isClickedNode=False):
         self.show(nodes, isClickedNode)
-        def complete():
-            if controller and getattr(controller, 'onComplete'):
-                controller.onComplete()
-#         self.animation.animating = False
-#         print 'in expand func----'
-#         for n in nodes:
-#             print n.path, n.startPos, n.endPos
-#         self.animation.setOptions(controller, compute, complete)
-#         self.animation.start()
-        complete()
+        if controller and getattr(controller, 'onComplete'):
+            controller.onComplete()
         
     def plotStep(self, delta, controller, animating):
         viz = self.viz
@@ -101,8 +91,9 @@ class Group(object):
         
     def show(self, nodes, isClickedNode=False):
         config = self.config
-        self.nodes = self.prepare(nodes)
+        self.nodes = self.prepare(nodes) #get nodes with children
         for n in nodes:
+            # make the nodes within the certain levels under the nodes in self.nodes visible
             ns = self.graph.eachLevel(n, 0,  1 if isClickedNode else config.levelsToShow)
             for nn in ns:
                 for nnn in nn:

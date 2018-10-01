@@ -15,10 +15,6 @@ def setExistDrawnOfNodes(nodes, flag):
 class Animation(object):
     '''
     *Animations*
-     - _duration_ Duration of the animation in milliseconds. Default's 700.
-     - _fps_ Frames per second. Default's 25.
-     - _transition_ One of the transitions defined in the <Animation> class. Default's Quart.easeInOut.
-     - _clearCanvas_ Whether to clear canvas on each animation frame or not. Default's true.
     '''
     TYPES = ['nothing', 'replot', 'fade:seq', 'fade:con']
     def __init__(self, viz):
@@ -41,7 +37,6 @@ class Animation(object):
         self.animationHideGroup.finished.connect(self.endHideAnimation)
         self.animationMoveGroup.finished.connect(self.endMoveAnimation)
         self.animationShowGroup.finished.connect(self.endShowAnimation)
-#         self.group.finished.connect(self.endAnimation)
         self.isExpand = None
         
     def setAnimatePosOptions(self, item, start, end, group):

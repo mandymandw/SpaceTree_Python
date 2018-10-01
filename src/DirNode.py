@@ -113,7 +113,7 @@ class DirNode(QGraphicsObject):
         self.relativeX, self.relativeY = rx, ry
         self.xy[0], self.xy[1] = self.scene.canvasX + rx*self.scene.canvasW, self.scene.canvasY + ry*self.scene.canvasH
         QGraphicsObject.setPos(self, QPointF(self.xy[0],self.xy[1]))
-    
+                
     def mousePressEvent(self, event):
         QGraphicsObject.mousePressEvent(self, event)
         self.scene.layout.selectPath(self)
@@ -121,5 +121,5 @@ class DirNode(QGraphicsObject):
             self.scene.layout.expandNode(self, True)
         else:
             self.scene.layout.collapseNode(self,True)
-        
+        self.scene.layout.setOpacityOfDrawnNodes()
         self.scene.update()
