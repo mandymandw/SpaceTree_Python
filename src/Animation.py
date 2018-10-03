@@ -58,11 +58,9 @@ class Animation(object):
         self.nodesToShow = self.viz.nodesDraw2-self.viz.nodesDraw1
         self.nodesToHide = self.viz.nodesDraw1-self.viz.nodesDraw2
         self.nodesToMove = self.viz.nodesDraw2&self.viz.nodesDraw1
-#         print 'show', ','.join(n.label for n in self.nodesToShow)
-#         print 'hide',','.join(n.label for n in self.nodesToHide)
-#         print 'move',','.join(n.label for n in self.nodesToMove)
-#         self.group.addAnimation(self.animationHideGroup)
-#         self.group.addAnimation(self.animationMoveGroup)
+        print 'show', ','.join(n.label for n in self.nodesToShow)
+        print 'hide',','.join(n.label for n in self.nodesToHide)
+        print 'move',','.join(n.label for n in self.nodesToMove)
         setExistDrawnOfNodes(self.nodesToHide, True)
         setExistDrawnOfNodes(self.nodesToShow, False)
         self.toMove = False
@@ -79,17 +77,18 @@ class Animation(object):
         self.isExpand = isExpandNode
         '''We do 1.hide, 2.move, then 3. show'''
         self.computeNodeCategory()
-        if self.nodesToHide:
-            self.startHideNodeAnimation()
-        if self.nodesToMove:
-            self.startMoveNodeAnimation()
-        if self.nodesToShow:
-            self.startShowNodeAnimation()
+        self.startHideNodeAnimation()
+        self.startMoveNodeAnimation()
+        self.startShowNodeAnimation()
         self._status_update_timer.start(20)
-        self.animationHideGroup.start()
+        if self.nodesToHide:
+            self.animationHideGroup.start()
+        elif self.nodesToMove:
+            self.animationMoveGroup.start()
+        elif self.nodesToShow:
+            self.animationShowGroup.start()
         
     def startHideNodeAnimation(self):
-#             print '=======hide============'
         for n in self.nodesToHide:
             if self.isExpand:
                 if self.viz.root.parent and n == self.viz.root.parent: continue
@@ -103,7 +102,6 @@ class Animation(object):
         
     def startMoveNodeAnimation(self):
         if not self.toMove: return
-#             print '=======move============'
         for n in self.nodesToMove:
             if self.viz.root.parent and n == self.viz.root.parent: continue
             self.setAnimatePosOptions(n, QPointF(n.startPos[0], n.startPos[1]), QPointF(n.endPos[0], n.endPos[1]), self.animationMoveGroup)
@@ -160,14 +158,14 @@ class Animation(object):
         self.scene.update()
         
     def endShowAnimation(self):
-        if self.nodesToShow:
-            for n in self.nodesToShow:
-                n.setAbsolutePos(n.endPos[0], n.endPos[1])
-            self._status_update_timer.stop()
-            self.animationShowGroup.stop()
-            self.animationShowGroup.clear()
-            self.nodesToShow = set()
-            print 'out of show animation======='
-            self.scene.update()
-            self.viz.busy = False
+        for n in self.nodesToShow:
+            n.setAbsolutePos(n.endPos[0], n.endPos[1])
+        self._status_update_timer.stop()
+        self.animationShowGroup.stop()
+        self.animationShowGroup.clear()
+        self.nodesToShow = set()
+        self.scene.scaleObjectGraph()
+        self.scene.update()
+        self.viz.busy = False
+        print 'out of show animation======='
                 

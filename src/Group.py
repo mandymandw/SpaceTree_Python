@@ -94,13 +94,17 @@ class Group(object):
         self.nodes = self.prepare(nodes) #get nodes with children
         for n in nodes:
             # make the nodes within the certain levels under the nodes in self.nodes visible
+#             print '-----------------'
+#             print n.path
             ns = self.graph.eachLevel(n, 0,  1 if isClickedNode else config.levelsToShow)
             for nn in ns:
                 for nnn in nn:
+#                     print nnn.path, nnn.exist
                     if nnn.exist:
                         self.ancestorExpandedSet(nnn)
                         nnn.drawn=True
                         nnn.setVisible(True)
+            
                 
     def ancestorExpandedSet(self, node):
         node  = node.parent

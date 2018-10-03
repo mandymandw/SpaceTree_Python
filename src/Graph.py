@@ -59,60 +59,18 @@ class Graph(object):
 #             self.createDirNode(d)
 #         self.mycomputeLevels(dirlist)
     '''for file list'''
-    def createGraph(self, dirs):
-        import os
-        '''can remove when reading from crawl file'''
-        dirset = set('/')
-        for d in dirs:
-            ds = d.split('/')
-            path='/'
-            for dd in ds:
-                path += '/'+dd
-                path = os.path.abspath(path.replace("//", "/"))
-                dirset.add(path)
-        dirlist = sorted(list(dirset))
-        self.dirlist = dirlist
-        for d in dirlist:
-            self.createDirNode(d)
-        self.mycomputeLevels(dirlist)
-         
-    def mycomputeLevels(self, dirlist):
-        self.root = self.nodeDict[dirlist[0]]
-        self.root.depth = 0
-        startDepth = 0 if self.root.path=='/' else self.root.path.count('/')
-        '''get parent and children nodes'''
-        for i in xrange(len(dirlist)):
-            d = dirlist[i]
-#             dset = set(d.split('/'))
-            node = self.nodeDict[d]
-            p = d[0:d.rfind('/')]
-            if p=='': p = '/'  #remove after using crawl file
-            if node != self.root:
-#                 p = d[0:d.rfind('/')]
-                pn = self.nodeDict[p]
-                node.parent = pn
-                pn.children.add(node)
-                node.depth = d.count('/')-startDepth
-            self.createDirEdge(node.parent, node)
-#         '''test'''
-#         for p,n in self.nodeDict.iteritems():
-#             print p, 'None' if not n.parent else n.parent.path, ','.join(x.path for x in n.children)
-
-    '''For file crawl file'''
 #     def createGraph(self, dirs):
 #         import os
 #         '''can remove when reading from crawl file'''
-# #         dirset = set('/')
-# #         for d in dirs.keys():
-# #             ds = d.split('/')
-# #             path='/'
-# #             for dd in ds:
-# #                 path += '/'+dd
-# #                 path = os.path.abspath(path.replace("//", "/"))
-# #                 dirset.add(path)
-#         ''''''
-# #         dirlist = sorted(list(dirset))
-#         dirlist = sorted(dirs.keys())
+#         dirset = set('/')
+#         for d in dirs:
+#             ds = d.split('/')
+#             path='/'
+#             for dd in ds:
+#                 path += '/'+dd
+#                 path = os.path.abspath(path.replace("//", "/"))
+#                 dirset.add(path)
+#         dirlist = sorted(list(dirset))
 #         self.dirlist = dirlist
 #         for d in dirlist:
 #             self.createDirNode(d)
@@ -125,19 +83,61 @@ class Graph(object):
 #         '''get parent and children nodes'''
 #         for i in xrange(len(dirlist)):
 #             d = dirlist[i]
-#             dset = set(d.split('/'))
+# #             dset = set(d.split('/'))
 #             node = self.nodeDict[d]
-# #             if p=='': p = '/'  #remove after using crawl file
+#             p = d[0:d.rfind('/')]
+#             if p=='': p = '/'  #remove after using crawl file
 #             if node != self.root:
-#                 p = d[0:d.rfind('/')]
+# #                 p = d[0:d.rfind('/')]
 #                 pn = self.nodeDict[p]
 #                 node.parent = pn
 #                 pn.children.add(node)
 #                 node.depth = d.count('/')-startDepth
 #             self.createDirEdge(node.parent, node)
-# #         '''ZNOUSE_test'''
+# #         '''test'''
 # #         for p,n in self.nodeDict.iteritems():
 # #             print p, 'None' if not n.parent else n.parent.path, ','.join(x.path for x in n.children)
+
+    '''For file crawl file'''
+    def createGraph(self, dirs):
+        import os
+        '''can remove when reading from crawl file'''
+#         dirset = set('/')
+#         for d in dirs.keys():
+#             ds = d.split('/')
+#             path='/'
+#             for dd in ds:
+#                 path += '/'+dd
+#                 path = os.path.abspath(path.replace("//", "/"))
+#                 dirset.add(path)
+        ''''''
+#         dirlist = sorted(list(dirset))
+        dirlist = sorted(dirs.keys())
+        self.dirlist = dirlist
+        for d in dirlist:
+            self.createDirNode(d)
+        self.mycomputeLevels(dirlist)
+          
+    def mycomputeLevels(self, dirlist):
+        self.root = self.nodeDict[dirlist[0]]
+        self.root.depth = 0
+        startDepth = 0 if self.root.path=='/' else self.root.path.count('/')
+        '''get parent and children nodes'''
+        for i in xrange(len(dirlist)):
+            d = dirlist[i]
+            dset = set(d.split('/'))
+            node = self.nodeDict[d]
+#             if p=='': p = '/'  #remove after using crawl file
+            if node != self.root:
+                p = d[0:d.rfind('/')]
+                pn = self.nodeDict[p]
+                node.parent = pn
+                pn.children.add(node)
+                node.depth = d.count('/')-startDepth
+            self.createDirEdge(node.parent, node)
+#         '''ZNOUSE_test'''
+#         for p,n in self.nodeDict.iteritems():
+#             print p, 'None' if not n.parent else n.parent.path, ','.join(x.path for x in n.children)
             
             
 #     def mycomputeLevels(self, dirlist):
@@ -235,6 +235,7 @@ class Graph(object):
             templevel1 = copy.copy(templevel2)
             templevel2 = []
         return leaflevelChildren
+
     '''
     Method: eachAdjacency
         Iterates over <Graph.Node> adjacencies applying the *action* function.

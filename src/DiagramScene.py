@@ -20,14 +20,12 @@ class DiagramScene(QGraphicsScene):
         
         self.main = main
         self.margin_vertical = 20
-        self.margin_horizontal = 150
+        self.margin_horizontal = 10
         self.canvasX, self.canvasY = self.margin_horizontal, self.margin_vertical
         self.canvasW, self.canvasH = self.sceneRect().width()-2*self.margin_horizontal,\
                                      self.sceneRect().height()-2*self.margin_vertical
         '''For drawing graphs'''
         self.graph = Graph(self) #Access a <Graph> instance.
-#         self.op = viz.op #Access a <ST.Op> instance.
-#         self.fx = None #Access a  <ST.Plot> instance.
         '''set pos for canvas'''
         self.translateOffsetX, self.translateOffsetY = 0, 0
         self.scaleOffsetX, self.scaleOffsetY = 1,1
@@ -45,15 +43,11 @@ class DiagramScene(QGraphicsScene):
         path = self.main.searchLineEdit.text()
         path = self.checkInputPath(path)
         if not path: return
-        self.layout.select(path)
+        self.layout.onClick(path)
+#         self.layout.select(path)
         self.layout.setRoot(path)
         self.update()
         
-#     def drawDirNodes(self):
-#         self.layout = STLayout(self.graph.root, self.graph.nodeDict, self)
-#         self.layout.config.levelsToShow = 2
-#         self.layout.onClick(self.graph.root.path)
-    
     def processCrawlerResult(self, filename):
         import os.path
         if not os.path.exists(filename): return 
@@ -69,16 +63,10 @@ class DiagramScene(QGraphicsScene):
         self.view.setTransformationAnchor(QGraphicsView.NoAnchor)
         self.graph.createGraph(directories)
         self.layout = STLayout(self.graph.root, self.graph.nodeDict, self)
-        self.layout.config.levelsToShow = 3
         self.layout.onClick(self.graph.root.path)
-#         self.drawDirNodes()
 #         self.translate(0, 300)
 #         self.view.translate(0,300)
-#         print self.graph.root.pos()
 #         pos = self.view.mapToScene(self.graph.root.pos().x(),self.graph.root.pos().y())
-#         print pos.x(), pos.y()
-#         self.graph.root.setPos(pos.x()/self.canvasW, pos.y()/self.canvasY)
-#         self.scale(.8, .8)
         
     def updateAllItemPos(self):
         for i in self.items():
@@ -109,35 +97,49 @@ class DiagramScene(QGraphicsScene):
 #         if not disablePlot:
 #             self.update()
 # 
-#     '''Method: scale
-#       
-#       Scales the canvas.
-#       
-#       Parameters:
-#       
-#       x - (number) scale value.
-#       y - (number) scale value.
-#       disablePlot - (boolean) Default's *false*. Set this to *true* if you don't want to refresh the visualization.
-#     '''
-#     def scale(self, x, y, disablePlot=False):
-#         px, py = self.scaleOffsetX * x, self.scaleOffsetY * y
+    '''Method: scale
+       
+      Scales the canvas.
+       
+      Parameters:
+       
+      x - (number) scale value.
+      y - (number) scale value.
+      disablePlot - (boolean) Default's *false*. Set this to *true* if you don't want to refresh the visualization.
+    '''
+    def scale(self, x, disablePlot=False):
+        y = x
+        px, py = self.scaleOffsetX * x, self.scaleOffsetY * y
 #         dx, dy = self.translateOffsetX*(x-1)/px, self.translateOffsetY*(y-1)/py
-#         self.scaleOffsetX, self.scaleOffsetY = px, py
-#         self.view.scale(x,y)
+        self.scaleOffsetX, self.scaleOffsetY = px, py
+        self.view.scale(x,y)
 #         self.view.translate(dx, dy)
-# #         for i in self.items():
-# #             i.setPos(, )
-#         if not disablePlot:
-#             self.update()
+        self.scaleGraph(1/x)
+        self.update()
     
+    def scaleGraph(self, ratio):
+        for i in self.items():
+            if isinstance(i, DirNode):
+                i.setScale(ratio)
+    
+    def scaleObjectGraph(self):
+        import sys
+        topLeftX, topLeftY, bottomRightX, bottomRightY = sys.maxint, sys.maxint, 0, 0
+        for n in self.layout.nodesDraw2:
+            topLeftX = min(topLeftX, n.xy[0])
+            topLeftY = min(topLeftY, n.xy[1])
+            bottomRightX = max(bottomRightX, n.xy[0])
+            bottomRightY = max(bottomRightY, n.xy[1])
+        width, height = bottomRightX-topLeftX, bottomRightY-topLeftY
+#         print topLeftX, topLeftY, self.scaleOffsetX*width, self.scaleOffsetX*height, self.width(), self.height()
+        ratio = max((1.0*self.scaleOffsetY*height)/self.height(), (1.0*self.scaleOffsetX*width)/self.width())
+#         print ratio
+        if ratio>1:
+            self.scale(0.9/ratio)
+#             self.view.centerOn(topLeftX+0.5*self.width(), topLeftY+0.5*self.height())
+              
     def clearScreen(self):
         for i in self.items():
             i.exit = False
             i.drawn = False
             i.setVisibile(False)
-
-#     def mousePressEvent(self, event):
-#         QGraphicsScene.mousePressEvent(self, event)
-#         if event.buttons() == Qt.LeftButton:
-#             self.layout.setRoot('/Users/manw/Documents/interview/cv_temp')
-    

@@ -21,21 +21,21 @@ class MainWindow(QMainWindow):
             self.scene.canvasW, self.scene.canvasH = \
                 self.scene.sceneRect().width()-2*self.scene.margin_horizontal,\
                              self.scene.sceneRect().height()-2*self.scene.margin_vertical
+            self.searchConfirmWidget.setPos(10+2*self.searchConfirmWidget.geometry().width(),-20)#self.scene.sceneRect().width()-self.searchConfirmWidget.geometry().width()-10, 10)
+            self.searchWidget.setPos(self.searchConfirmWidget.pos().x()-self.searchLineEdit.geometry().width()-10, \
+                                     self.searchConfirmWidget.pos().y()-0.5*(self.searchLineEdit.geometry().height()-self.searchConfirmWidget.geometry().height()))
         
     def addSearchBox(self):
         self.searchConfirmWidget = QGraphicsProxyWidget()
         self.confirmSearchBtn = QPushButton('OK')
         self.searchConfirmWidget.setWidget(self.confirmSearchBtn)
         self.scene.addItem(self.searchConfirmWidget)
-        self.searchConfirmWidget.setPos(self.scene.sceneRect().width()-self.searchConfirmWidget.geometry().width()-10, 10)
-        self.confirmSearchBtn.clicked.connect(self.scene.confirmSearch)
     
         self.searchLineEdit = QLineEdit()
         self.searchWidget = QGraphicsProxyWidget()
         self.searchWidget.setWidget(self.searchLineEdit)
         self.scene.addItem(self.searchWidget)
-        self.searchWidget.setPos(self.searchConfirmWidget.pos().x()-self.searchLineEdit.geometry().width()-10, \
-                                self.searchConfirmWidget.pos().y()-0.5*(self.searchLineEdit.geometry().height()-self.searchConfirmWidget.geometry().height()))
+        self.confirmSearchBtn.clicked.connect(self.scene.confirmSearch)
         
 def main():
     app = QApplication(sys.argv)
@@ -48,11 +48,12 @@ def main():
     view.setRenderHints(QPainter.Antialiasing)
     mainw.setCentralWidget(view)
     scene.setSceneRect(QRectF(view.geometry()))
+    mainw.addSearchBox()
     mainw.show()
     directories = scene.processCrawlerResult('/Users/manw/Documents/Projects/OSCrawler/InterviewCrawl.txt')
-#         directories = self.processCrawlerResult('/Users/manw/Documents/Projects/OSCrawler/DownloadsCrawl.txt')
+#     directories = scene.processCrawlerResult('/Users/manw/Documents/Projects/OSCrawler/DownloadsCrawl.txt')
     scene.createGraph(directories)
-    mainw.addSearchBox()
+    
     sys.exit(app.exec_())
 
 if __name__ == '__main__':

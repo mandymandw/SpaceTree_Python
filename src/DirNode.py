@@ -11,7 +11,6 @@ import math
 '''
 
 '''
-rad = 5
 
 def getLabel(node):
     return node.path.split('/')[-1]
@@ -35,13 +34,14 @@ class DirNode(QGraphicsObject):
         If given a JSON tree or graph, a node _data_ property contains properties which are the same as defined here but prefixed with 
         a dollar sign (i.e $), the node properties will override the global node properties.
         '''
-        self.width, self.height = 2*rad, 2*rad
+        self.rad = 6
+        self.width, self.height = 2*self.rad, 2*self.rad
         self.exist = True  # Flag to display the node or not
         self.drawn = False # Flag for the visually drawing of the node on canvas. True means it is already drawn
         self.selected = False 
                 
         self.ignore = False
-        self.rad = rad
+        
         self.path = path
         self.label = '/'+getLabel(self)
         
@@ -56,6 +56,7 @@ class DirNode(QGraphicsObject):
         self.startPos = [0,0,1] #x,y,alpha
         self.endPos = [0,0,1]
         
+        
         self.setZValue(1)
         self.setFlag(QGraphicsItem.ItemIsSelectable)
         self.setVisible(False)
@@ -65,9 +66,8 @@ class DirNode(QGraphicsObject):
         return getattr(self,key)
 
     def boundingRect(self):
-        rad = 6
-        return QRectF(-rad, -rad, 2*rad, 2*rad)
-
+        return QRectF(-self.rad, -self.rad, self.width, self.width)
+    
     def paint(self, painter, option, widget=None):
         '''set fill color'''
         painter.setBrush(QBrush(Qt.white))

@@ -69,7 +69,6 @@ class DirEdge(QGraphicsLineItem):
     def paint(self, painter, option, widget=None):
         if self.startItem.collidesWithItem(self.endItem):
             return
-         
         if not self.startItem.isVisible() or not self.endItem.isVisible():
             return 
         painter.setRenderHint(QPainter.HighQualityAntialiasing)
